@@ -17,6 +17,7 @@
             top: 0;
             background-color: #f8f9fa;
             z-index: 1;
+            user-select: none;
         }
         .hidden {
             display: none;
@@ -43,6 +44,16 @@
         body {
             margin: 0;
             padding: 0;
+        }
+        .resizer {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 5px;
+            cursor: col-resize;
+            user-select: none;
+            touch-action: none;
         }
     </style>
 </head>
@@ -198,13 +209,38 @@
                     <td class="permission-cell">${item.permissions}</td>
                 `;
                 tbody.appendChild(row);
-                
-                // Débogage pour les 5 premiers éléments
-                if (index < 5) {
-                    console.log(`Affichage élément ${index + 1}:`, item);
-                }
             });
-            document.getElementById('totalEntries').textContent = data.length;
+            initResizable();
+        }
+
+        function initResizable() {
+            const headers = document.querySelectorAll('.table th');
+            headers.forEach(header => {
+                const resizer = document.createElement('div');
+                resizer.className = 'resizer';
+                header.appendChild(resizer);
+                let isResizing = false;
+                let startX, startWidth;
+                resizer.addEventListener('mousedown', function(e) {
+                    isResizing = true;
+                    startX = e.pageX;
+                    startWidth = header.offsetWidth;
+                    resizer.classList.add('resizing');
+                });
+                document.addEventListener('mousemove', function(e) {
+                    if (!isResizing) return;
+                    const width = startWidth + (e.pageX - startX);
+                    if (width > 50) {
+                        header.style.width = width + 'px';
+                    }
+                });
+                document.addEventListener('mouseup', function() {
+                    if (isResizing) {
+                        isResizing = false;
+                        resizer.classList.remove('resizing');
+                    }
+                });
+            });
         }
 
         function search() {
