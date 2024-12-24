@@ -55,6 +55,24 @@
             user-select: none;
             touch-action: none;
         }
+        .badge-inherited {
+            background-color: green;
+            color: white;
+            border-radius: 50%;
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .badge-not-inherited {
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -89,6 +107,10 @@
                 <div class="btn-group" role="group">
                     <button class="btn btn-outline-primary" onclick="filterByFolder()">Filtrer par dossier</button>
                     <button class="btn btn-outline-primary" onclick="filterByPermission()">Filtrer par permission</button>
+                </div>
+                <div class="d-inline ml-2 float-end">
+                    <span class="badge-inherited"></span> Hérité : Oui
+                    <span class="badge-not-inherited"></span> Hérité : Non
                 </div>
             </div>
         </div>
@@ -135,58 +157,42 @@
             allData = [];
             let currentFolder = '';
             let currentPermissions = [];
-            
             const lines = content.split('\n');
             console.log(`Nombre total de lignes: ${lines.length}`);
-            
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
-                
-                // Débogage pour les 5 premières lignes
-                if (i < 5) {
-                    console.log(`Ligne ${i + 1}: "${line}"`);
-                }
-
                 if (line.includes('Dossier :')) {
-                    // Si on a déjà un dossier en cours, on l'ajoute
                     if (currentFolder && currentPermissions.length > 0) {
-                        console.log(`Ajout du dossier: ${currentFolder} avec ${currentPermissions.length} permissions`);
                         allData.push({
                             folder: currentFolder,
-                            permissions: currentPermissions.join('\n')
+                            permissions: currentPermissions.join('\n'),
+                            inherited: currentPermissions.some(perm => perm.includes('Hérité : True'))
                         });
                     }
-                    
                     currentFolder = line.split('Dossier :')[1].trim();
-                    console.log(`Nouveau dossier trouvé: ${currentFolder}`);
                     currentPermissions = [];
-                    
                 } else if (line.includes('Utilisateur :')) {
                     currentPermissions.push(line);
-                    if (i < 10) {
-                        console.log(`Permission ajoutée: ${line}`);
-                    }
-                    
                 } else if (line.startsWith('-'.repeat(10)) && currentFolder && currentPermissions.length > 0) {
                     console.log(`Séparateur trouvé, ajout du dossier: ${currentFolder}`);
                     allData.push({
                         folder: currentFolder,
-                        permissions: currentPermissions.join('\n')
+                        permissions: currentPermissions.join('\n'),
+                        inherited: currentPermissions.some(perm => perm.includes('Hérité : True'))
                     });
                     currentFolder = '';
                     currentPermissions = [];
                 }
             }
-
             // Ajouter le dernier ensemble si nécessaire
             if (currentFolder && currentPermissions.length > 0) {
                 console.log(`Ajout du dernier dossier: ${currentFolder}`);
                 allData.push({
                     folder: currentFolder,
-                    permissions: currentPermissions.join('\n')
+                    permissions: currentPermissions.join('\n'),
+                    inherited: currentPermissions.some(perm => perm.includes('Hérité : True'))
                 });
             }
-
             console.log(`Nombre total de dossiers traités: ${allData.length}`);
             
             if (allData.length === 0) {
@@ -199,16 +205,14 @@
         }
 
         function displayData(data) {
-            const tbody = document.getElementById('permissionsTable');
-            tbody.innerHTML = '';
-            
-            data.forEach((item, index) => {
+            const tableBody = document.getElementById('permissionsTable');
+            tableBody.innerHTML = '';
+            data.forEach(entry => {
+                const permissionsText = entry.permissions.replace(/Hérité : (True|False)/g, '').trim();
+                const permissionsBadge = entry.inherited ? '<span class="badge-inherited"></span>' : '<span class="badge-not-inherited"></span>';
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.folder}</td>
-                    <td class="permission-cell">${item.permissions}</td>
-                `;
-                tbody.appendChild(row);
+                row.innerHTML = `<td>${entry.folder}</td><td>${permissionsBadge} ${permissionsText}</td>`;
+                tableBody.appendChild(row);
             });
             initResizable();
         }
