@@ -14,12 +14,10 @@ Ce projet est un outil d'analyse des permissions des fichiers dans un environnem
 - Bootstrap pour le style
 
 ## Utilisation
-1. Ouvrez le fichier [index.html] dans votre navigateur.
-2. Glissez et déposez un fichier texte ou utilisez le bouton pour sélectionner un fichier.
-3. Utilisez les fonctionnalités de recherche et de filtrage pour explorer les données.
+1. Lancer le "Script permissions.txt" en powershell pour générer le rapport au format .txt
+2. Ouvrir le fichier [index.html] dans le navigateur.
+3. Glisser et déposer le rapport ou utiliser le bouton pour sélectionner le fichier.
+4. Utiliser les fonctionnalités de recherche et de filtrage pour explorer les données.
 
 ## Contributions
 Les contributions sont les bienvenues ! N'hésitez pas à soumettre une demande de tirage (pull request).
-
-## License
-Ce projet est sous la licence MIT.
