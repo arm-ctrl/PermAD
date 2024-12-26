@@ -1,0 +1,61 @@
+# Script pour analyser les permissions NTFS des dossiers avec gestion silencieuse des erreurs
+$searchPath = "C:\..." # Répertoire à analyser
+$outputFolder = "C:\...\Rapport" # Répertoire pour le rapport
+$outputFile = Join-Path -Path $outputFolder -ChildPath "detailed_folder_permissions_report.txt"
+
+# Liste des comptes ou mots-clés à exclure
+$excludedAccounts = @(
+    "BUILTIN\Administrateurs",
+    "CREATEUR PROPRIETAIRE",
+    "SYSTEM",
+    "DOMAINE\Administrateur",
+    "DOMAINE\Admins"
+)
+
+# Mot-clé pour filtrer les utilisateurs comme "AUTORITE NT"
+$excludedKeywords = @("AUTORITE NT")
+
+# Créer le dossier de sortie s'il n'existe pas
+if (-not (Test-Path -Path $outputFolder)) {
+    New-Item -ItemType Directory -Path $outputFolder
+}
+
+# Initialiser le fichier de sortie
+"Rapport des permissions des dossiers" | Out-File -FilePath $outputFile -Encoding UTF8
+"----------------------------------------`n" | Out-File -FilePath $outputFile -Append
+
+# Fonction principale : parcourir uniquement les dossiers
+try {
+    Get-ChildItem -Path $searchPath -Directory -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            $acl = Get-Acl $_.FullName -ErrorAction Stop
+            $folderDetails = "Dossier : $($_.FullName)"
+            $folderDetails | Out-File -FilePath $outputFile -Append -Encoding UTF8
+
+            foreach ($access in $acl.Access) {
+                # Filtrer les comptes exclus
+                $userAccount = $access.IdentityReference.ToString()
+
+                # Vérifier si le compte est exclu ou contient un mot-clé exclu
+                if (-not ($excludedAccounts -contains $userAccount) -and
+                    -not ($excludedKeywords | ForEach-Object { $userAccount -like "*$_*" })) {
+                    # Construire la ligne pour chaque utilisateur
+                    $rights = $access.FileSystemRights
+                    $inherited = if ($access.IsInherited) { "True" } else { "False" }
+                    $line = "  - Utilisateur : $userAccount | Droits : $rights | Hérité : $inherited"
+                    $line | Out-File -FilePath $outputFile -Append -Encoding UTF8
+                }
+            }
+
+            # Ajouter une séparation entre les dossiers
+            "----------------------------------------`n" | Out-File -FilePath $outputFile -Append -Encoding UTF8
+        } catch {
+            # Ignorer les erreurs pour ce dossier spécifique
+            Write-Warning "Erreur lors du traitement du dossier : $($_.FullName)"
+        }
+    }
+} catch {
+    Write-Host "Erreur générale : $($_.Exception.Message)"
+}
+
+Write-Host "Rapport généré dans : $outputFile"
